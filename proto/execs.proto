@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+import "students.proto";
+
+package main;
+
+option go_package = "/proto/gen;grpcapipb";
+
+service ExecsService {
+    rpc GetExecs (GetExecsRequest) returns (Execs);
+    rpc AddExecs (Execs) returns (Execs);
+    rpc UpdateExecs (Execs) returns (Execs);
+    rpc DeleteExecs (ExecIDs) returns (DeleteExecConfirmation);
+    
+    rpc Login (ExecLoginRequest) returns (ExecLoginResponse);
+    rpc Logout (EmptyRequest) returns (ExecLogoutResponse);
+    rpc UpdatePassword (UpdatePasswordRequest) returns (UpdatePasswordResponse);
+    rpc ResetPassword (ResetPasswordRequest) returns (Confirmation);
+    rpc ForgotPassword (ForgotPasswordRequest) returns (ForgotPasswordResponse);
+    rpc DeactivateUser (ExecIDs) returns (Confirmation); 
+}
+
+message ExecLoginRequest {
+    string username = 1;
+    string password = 2;
+}
+
+message ExecLoginResponse {
+    bool status = 1;
+    string token = 2;
+}
+
+message ForgotPasswordRequest {
+    string email = 1;
+}
+
+message ForgotPasswordResponse {
+    bool confirmation = 1;
+    string message = 2;
+}
+
+message ResetPasswordRequest {
+    string reset_code = 1;
+    string new_password = 2;
+    string confirm_password = 3;
+}
+
+message Confirmation {
+    bool confirmation = 1;
+}
+
+message UpdatePasswordRequest {
+    string id = 1;
+    string current_password = 2;
+    string new_password = 3;
+}
+
+message UpdatePasswordResponse {
+    bool password_updated = 1;
+    string token = 2;
+}
+
+message ExecLogoutResponse {
+    bool logged_out = 1;
+}
+message EmptyRequest {}
+
+message DeleteExecConfirmation {
+    string status = 1;
+    repeated string deleted_ids = 2;
+}
+
+message ExecID {
+    string id = 1;
+}
+
+message ExecIDs {
+    repeated ExecID ids = 1;
+}
+
+message GetExecsRequest {
+    Exec student = 1;
+    repeated SortField sort_by = 2;
+}
+
+
+message Exec {
+    string id = 1;
+    string first_name = 2;
+    string last_name = 3;
+    string email = 4;
+    string username = 5;
+    string password = 6;
+    string password_changed_at = 7;
+    string user_created_at = 8;
+    string password_reset_token = 9;
+    string password_token_expires = 10;
+    string role = 11;
+    bool inactive_status = 12;
+}
+
+message Execs {
+    repeated Exec execs = 1;
+}
+
+
+
