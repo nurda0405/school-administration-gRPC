@@ -31,6 +31,7 @@ func (s *Server) AddTeachers(ctx context.Context, req *pb.Teachers) (*pb.Teacher
 
 func (s *Server) GetTeachers(ctx context.Context, req *pb.GetTeachersRequest) (*pb.Teachers, error) {
 	buildFilterForTeacher(req)
+	buildSortOptions(req.GetSortBy())
 	return nil, nil
 }
 
@@ -66,4 +67,18 @@ func buildFilterForTeacher(req *pb.GetTeachersRequest) {
 		}
 	}
 	fmt.Println(filter)
+}
+
+func buildSortOptions(sortFields []*pb.SortField) bson.D {
+	var sortOptions bson.D
+
+	for _, sortField := range sortFields {
+		order := 1
+		if sortField.GetOrder() == pb.Order_DESC {
+			order = -1
+		}
+		sortOptions = append(sortOptions, bson.E{Key: sortField.Field, Value: order})
+	}
+	fmt.Println(sortOptions)
+	return sortOptions
 }
