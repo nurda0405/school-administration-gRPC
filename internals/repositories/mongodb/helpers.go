@@ -40,3 +40,37 @@ func decodeEntities[T any, M any](ctx context.Context, cursor *mongo.Cursor, new
 	}
 	return entities, nil
 }
+
+func mapModelToPb[P any, M any](model M, newPb func() *P) *P {
+	pbStruct := newPb()
+	modelVal := reflect.ValueOf(model).Elem()
+	pbVal := reflect.ValueOf(pbStruct).Elem()
+
+	for i := 0; i < modelVal.NumField(); i++ {
+		modelField := modelVal.Field(i)
+		modelFieldType := modelVal.Type().Field(i)
+		pbField := pbVal.FieldByName(modelFieldType.Name)
+
+		if pbField.IsValid() && pbField.CanSet() {
+			pbField.Set(modelField)
+		}
+	}
+	return pbStruct
+}
+
+func mapPbToModel[P any, M any](pbStruct P, newModel func() *M) *M {
+	modelStruct := newModel()
+	pbVal := reflect.ValueOf(pbStruct).Elem()
+	modelVal := reflect.ValueOf(modelStruct).Elem()
+
+	for i := 0; i < pbVal.NumField(); i++ {
+		pbField := pbVal.Field(i)
+		fieldName := pbVal.Type().Field(i).Name
+
+		modelField := modelVal.FieldByName(fieldName)
+		if modelField.IsValid() && modelField.CanSet() {
+			modelField.Set(pbField)
+		}
+	}
+	return modelStruct
+}
