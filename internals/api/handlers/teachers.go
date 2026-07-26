@@ -2,14 +2,10 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"grpcapi/internals/models"
 	"grpcapi/internals/repositories/mongodb"
 	pb "grpcapi/proto/gen"
-	"reflect"
-	"strings"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -30,55 +26,25 @@ func (s *Server) AddTeachers(ctx context.Context, req *pb.Teachers) (*pb.Teacher
 }
 
 func (s *Server) GetTeachers(ctx context.Context, req *pb.GetTeachersRequest) (*pb.Teachers, error) {
-	buildFilterForTeacher(req)
-	buildSortOptions(req.GetSortBy())
-	return nil, nil
+	filter, err := buildFilter(req.Teacher, &models.Teacher{})
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	sortOptions := buildSortOptions(req.GetSortBy())
+
+	teachers, err := mongodb.GetTeachersFromDb(ctx, sortOptions, filter)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &pb.Teachers{Teachers: teachers}, nil
 }
 
-func buildFilterForTeacher(req *pb.GetTeachersRequest) {
-	filter := bson.M{}
-
-	var modelTeacher models.Teacher
-	modelVal := reflect.ValueOf(&modelTeacher).Elem()
-	modelType := modelVal.Type()
-
-	reqVal := reflect.ValueOf(req.Teacher).Elem()
-	reqType := reqVal.Type()
-
-	for i := 0; i < reqVal.NumField(); i++ {
-		fieldVal := reqVal.Field(i)
-		fieldName := reqType.Field(i).Name
-
-		if fieldVal.IsValid() && !fieldVal.IsZero() {
-			modelField := modelVal.FieldByName(fieldName)
-			if modelField.IsValid() && modelField.CanSet() {
-				modelField.Set(fieldVal)
-			}
-		}
+func (s *Server) UpdateTeachers(ctx context.Context, req *pb.Teachers) (*pb.Teachers, error) {
+	updatedTeachers, err := mongodb.ModifyTeachersInDb(ctx, req.Teachers)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
+	return &pb.Teachers{Teachers: updatedTeachers}, nil
 
-	for i := 0; i < modelVal.NumField(); i++ {
-		fieldVal := modelVal.Field(i)
-
-		if fieldVal.IsValid() && !fieldVal.IsZero() {
-			bsonTag := modelType.Field(i).Tag.Get("bson")
-			bsonTag = strings.TrimSuffix(bsonTag, ",omitempty")
-			filter[bsonTag] = fieldVal.Interface().(string)
-		}
-	}
-	fmt.Println(filter)
-}
-
-func buildSortOptions(sortFields []*pb.SortField) bson.D {
-	var sortOptions bson.D
-
-	for _, sortField := range sortFields {
-		order := 1
-		if sortField.GetOrder() == pb.Order_DESC {
-			order = -1
-		}
-		sortOptions = append(sortOptions, bson.E{Key: sortField.Field, Value: order})
-	}
-	fmt.Println(sortOptions)
-	return sortOptions
 }

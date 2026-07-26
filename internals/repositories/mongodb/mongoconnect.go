@@ -11,7 +11,7 @@ import (
 )
 
 func CreateMongoClient(ctx context.Context) (*mongo.Client, error) {
-	client, err := mongo.Connect(options.Client().ApplyURI("mongodb://localhost:27017"))
+	client, err := mongo.Connect(options.Client().ApplyURI("mongodb://localhost:27017").SetBSONOptions(&options.BSONOptions{ObjectIDAsHexString: true}))
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "Error connections to MongoDB")
 	}
